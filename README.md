@@ -1,1 +1,610 @@
-# kawthar
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kawthar's Kitchen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Caveat:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FBF0E2;
+    --cream-2:#F5E2CC;
+    --cocoa:#46291A;
+    --cocoa-soft:#8A6A52;
+    --caramel:#D08A45;
+    --rose:#E2748E;
+    --rose-deep:#C84E6C;
+    --gold:#F4B73D;
+    --mint:#A6C898;
+    --vanilla:#F6E7C8;
+    --choc:#7A4326;
+    --shadow:rgba(70,41,26,.16);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Nunito",system-ui,sans-serif;
+    color:var(--cocoa);
+    background:
+      radial-gradient(120% 90% at 80% -10%, #FFE6EC 0%, transparent 45%),
+      radial-gradient(120% 90% at 0% 110%, #FDEBC9 0%, transparent 50%),
+      var(--cream);
+    min-height:100vh;
+    overflow-x:hidden;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:22px 18px 60px;position:relative;z-index:2;}
+
+  /* sprinkle background dots */
+  .sprinkle-bg{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.5;}
+  .sprinkle-bg span{position:absolute;width:10px;height:4px;border-radius:4px;transform:rotate(var(--r));}
+
+  h1,h2,h3{font-family:"Fraunces",serif;font-weight:600;line-height:1.05;margin:0;}
+  .script{font-family:"Caveat",cursive;}
+
+  /* ---------- Welcome card ---------- */
+  #welcome{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;min-height:82vh;gap:18px;
+  }
+  .card{
+    background:linear-gradient(180deg,#fff,#FFF7EE);
+    border:2px solid var(--cream-2);
+    border-radius:26px;
+    padding:38px 30px 34px;
+    box-shadow:0 22px 50px -22px var(--shadow);
+    max-width:440px;position:relative;
+    animation:rise .8s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .card .tag{font-family:"Caveat",cursive;font-size:1.5rem;color:var(--rose-deep);}
+  .card h1{font-size:clamp(2.6rem,9vw,3.6rem);margin:6px 0 4px;color:var(--cocoa);}
+  .card .from{font-family:"Caveat",cursive;font-size:1.45rem;color:var(--cocoa-soft);}
+  .cake-mini{font-size:3.4rem;line-height:1;margin-bottom:6px;filter:drop-shadow(0 6px 8px var(--shadow));}
+  .blurb{color:var(--cocoa-soft);font-size:1.02rem;max-width:340px;margin:14px auto 4px;line-height:1.5;}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    font-family:"Nunito",sans-serif;font-weight:800;font-size:1.02rem;
+    border:none;border-radius:999px;padding:14px 26px;cursor:pointer;
+    background:linear-gradient(180deg,var(--rose),var(--rose-deep));
+    color:#fff;box-shadow:0 10px 22px -8px var(--rose-deep);
+    transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
+  }
+  .btn:hover{transform:translateY(-2px);filter:brightness(1.04);}
+  .btn:active{transform:translateY(1px) scale(.99);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;filter:grayscale(.3);}
+  .btn.ghost{background:#fff;color:var(--rose-deep);border:2px solid var(--cream-2);box-shadow:none;}
+  .btn.gold{background:linear-gradient(180deg,#FBCB5C,var(--caramel));box-shadow:0 10px 22px -8px var(--caramel);}
+  .btn:focus-visible{outline:3px solid var(--gold);outline-offset:3px;}
+
+  /* ---------- Game header / progress ---------- */
+  #game{display:none;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;}
+  .topbar h2{font-size:1.5rem;}
+  .topbar .sub{font-family:"Caveat",cursive;color:var(--rose-deep);font-size:1.2rem;}
+  .steps{display:flex;gap:8px;margin:14px 0 18px;flex-wrap:wrap;}
+  .step-dot{
+    flex:1;min-width:54px;height:8px;border-radius:99px;background:var(--cream-2);
+    position:relative;transition:background .4s ease;
+  }
+  .step-dot.done{background:linear-gradient(90deg,var(--rose),var(--gold));}
+  .step-dot.active{background:var(--rose);box-shadow:0 0 0 3px rgba(226,116,142,.22);}
+
+  /* ---------- Stage layout ---------- */
+  .stage{
+    background:linear-gradient(180deg,#fff,#FFFBF4);
+    border:2px solid var(--cream-2);border-radius:24px;
+    padding:22px;box-shadow:0 18px 40px -24px var(--shadow);
+  }
+  .panel{display:none;animation:fade .5s ease both;}
+  .panel.show{display:block;}
+  .panel h3{font-size:1.55rem;margin-bottom:4px;}
+  .panel .lead{color:var(--cocoa-soft);margin:0 0 16px;font-size:.98rem;}
+
+  /* ---------- Cake stage (CSS cake) ---------- */
+  .cake-stage{display:flex;flex-direction:column;align-items:center;margin:6px 0 18px;}
+  .plate{
+    width:230px;height:26px;border-radius:50%;
+    background:radial-gradient(ellipse at 50% 35%,#fff,#EAD9C4);
+    box-shadow:0 14px 22px -10px var(--shadow);margin-top:6px;
+  }
+  .cake{position:relative;width:170px;display:flex;flex-direction:column;align-items:center;transform-origin:bottom;}
+  .layer{
+    width:150px;background:linear-gradient(180deg,#E7B271,#C98B4E);
+    border-radius:10px 10px 4px 4px;margin-bottom:-3px;position:relative;z-index:1;
+    transition:height .8s cubic-bezier(.2,.9,.2,1), background .4s ease;
+    box-shadow:inset 0 -6px 0 rgba(0,0,0,.06);
+  }
+  .layer.l1{height:0;}
+  .layer.l2{width:150px;height:0;}
+  .baked .l1{height:46px;}
+  .baked .l2{height:40px;}
+  .frosting{
+    position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+    width:160px;height:26px;border-radius:14px;z-index:3;display:none;
+    background:var(--rose);
+    box-shadow:0 3px 0 rgba(0,0,0,.05);
+  }
+  .frosting::before,.frosting::after{
+    content:"";position:absolute;top:14px;width:18px;height:18px;border-radius:50%;background:inherit;
+  }
+  .frosting::before{left:18px;}.frosting::after{right:18px;}
+  .frosting .drip{position:absolute;top:16px;width:16px;height:22px;border-radius:0 0 12px 12px;background:inherit;}
+  .frosting .d1{left:46px;}.frosting .d2{right:46px;}.frosting .d3{left:50%;transform:translateX(-50%);height:28px;}
+  .frosted .frosting{display:block;}
+  .name-ice{
+    position:absolute;top:-4px;left:50%;transform:translateX(-50%);z-index:5;
+    font-family:"Caveat",cursive;font-weight:700;color:#fff;font-size:1.1rem;
+    text-shadow:0 1px 2px rgba(0,0,0,.25);opacity:0;transition:opacity .6s ease;white-space:nowrap;
+  }
+  .named .name-ice{opacity:1;}
+  /* candles */
+  .candles{position:absolute;top:-44px;left:50%;transform:translateX(-50%);z-index:6;display:flex;gap:16px;}
+  .candle{width:7px;height:34px;border-radius:3px;background:repeating-linear-gradient(45deg,#fff 0 5px,var(--rose) 5px 10px);position:relative;}
+  .candle::after{content:"";position:absolute;top:-3px;left:50%;transform:translateX(-50%);width:2px;height:5px;background:#5a3b22;}
+  .flame{
+    position:absolute;top:-16px;left:50%;transform:translateX(-50%);
+    width:10px;height:16px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
+    background:radial-gradient(circle at 50% 70%,#fff 0,var(--gold) 40%,#F2812F 100%);
+    opacity:0;transform-origin:bottom center;
+  }
+  .lit .flame{opacity:1;animation:flicker .35s infinite alternate ease-in-out;}
+  .sprinkled .layer::before{
+    content:"";position:absolute;inset:0;border-radius:inherit;
+    background-image:
+      radial-gradient(3px 3px at 20% 40%,var(--rose) 99%,transparent),
+      radial-gradient(3px 3px at 60% 30%,var(--mint) 99%,transparent),
+      radial-gradient(3px 3px at 80% 60%,var(--gold) 99%,transparent),
+      radial-gradient(3px 3px at 40% 70%,#fff 99%,transparent),
+      radial-gradient(3px 3px at 75% 20%,var(--rose-deep) 99%,transparent);
+  }
+  .deco-heart{position:absolute;z-index:7;font-size:1.1rem;animation:pop .4s ease both;pointer-events:none;}
+
+  /* ---------- Ingredients ---------- */
+  .ingredients{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:8px;}
+  .ing{
+    display:flex;align-items:center;gap:10px;border:2px solid var(--cream-2);
+    background:#fff;border-radius:16px;padding:12px 14px;cursor:pointer;font-weight:700;
+    transition:transform .15s ease,border-color .2s ease,opacity .3s ease, background .2s ease;
+    text-align:left;font-family:"Nunito";font-size:.98rem;color:var(--cocoa);
+  }
+  .ing .emj{font-size:1.5rem;}
+  .ing:hover{transform:translateY(-2px);border-color:var(--rose);}
+  .ing.used{opacity:.45;pointer-events:none;background:var(--vanilla);border-style:dashed;}
+  .ing.used::after{content:"✓";margin-left:auto;color:var(--rose-deep);font-weight:800;}
+  .bowl{font-size:3rem;text-align:center;margin:4px 0 2px;transition:transform .3s ease;}
+  .bowl.shake{animation:bowlshake .5s ease;}
+
+  /* ---------- Mixing ---------- */
+  .mix-area{text-align:center;}
+  .spoon{font-size:3.4rem;display:inline-block;transition:transform .12s ease;}
+  .progress{height:16px;border-radius:99px;background:var(--cream-2);overflow:hidden;margin:16px auto;max-width:380px;}
+  .progress > i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--rose),var(--gold));transition:width .2s ease;}
+
+  /* ---------- Decorate controls ---------- */
+  .swatches{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:6px 0 14px;}
+  .sw{width:42px;height:42px;border-radius:50%;border:3px solid #fff;box-shadow:0 4px 10px -3px var(--shadow);cursor:pointer;transition:transform .15s ease;}
+  .sw:hover{transform:scale(1.1);}
+  .sw.sel{outline:3px solid var(--cocoa);outline-offset:2px;}
+  .deco-controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  .hint{font-family:"Caveat",cursive;color:var(--rose-deep);font-size:1.15rem;text-align:center;margin-top:8px;}
+
+  .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:18px;}
+
+  /* love note unlocked */
+  .lovenote{
+    margin:16px auto 0;max-width:420px;background:linear-gradient(180deg,#FFFDF8,#FFF4E4);
+    border:2px dashed var(--rose);border-radius:18px;padding:16px 18px;text-align:center;
+    font-family:"Caveat",cursive;font-size:1.4rem;color:var(--cocoa);line-height:1.35;
+    animation:rise .6s ease both;
+  }
+
+  /* ---------- Finale ---------- */
+  .finale{text-align:center;}
+  .finale .big{font-family:"Fraunces";font-size:clamp(2rem,8vw,2.8rem);color:var(--rose-deep);margin:8px 0;}
+  .finale .letter{
+    font-family:"Caveat",cursive;font-size:1.7rem;line-height:1.4;color:var(--cocoa);
+    max-width:440px;margin:8px auto 4px;
+  }
+  .finale .sign{font-family:"Caveat",cursive;font-size:1.6rem;color:var(--rose-deep);margin-top:6px;}
+
+  /* ---------- Toast ---------- */
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(40px);
+    background:var(--cocoa);color:#fff;padding:12px 20px;border-radius:99px;font-weight:700;
+    font-family:"Nunito";box-shadow:0 12px 30px -10px rgba(0,0,0,.4);opacity:0;
+    transition:opacity .3s ease,transform .3s ease;z-index:50;max-width:88vw;text-align:center;}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* floating hearts overlay */
+  .heart-float{position:fixed;z-index:40;font-size:1.4rem;pointer-events:none;animation:floatup 1.6s ease-out forwards;}
+
+  /* ---------- animations ---------- */
+  @keyframes rise{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes fade{from{opacity:0;}to{opacity:1;}}
+  @keyframes pop{from{transform:scale(0);}to{transform:scale(1);}}
+  @keyframes bowlshake{0%,100%{transform:rotate(0);}25%{transform:rotate(-8deg);}75%{transform:rotate(8deg);}}
+  @keyframes flicker{from{transform:translateX(-50%) scaleY(1) rotate(-2deg);}to{transform:translateX(-50%) scaleY(1.18) rotate(2deg);}}
+  @keyframes floatup{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-140px) scale(1.4);}}
+
+  @media (max-width:480px){
+    .wrap{padding:16px 14px 50px;}
+    .stage{padding:18px 14px;}
+    .ingredients{grid-template-columns:repeat(2,1fr);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important;transition-duration:.05ms !important;}
+    .lit .flame{opacity:1;}
+  }
+</style>
+</head>
+<body>
+<div class="sprinkle-bg" id="sprinkleBg"></div>
+
+<div class="wrap">
+  <!-- WELCOME -->
+  <section id="welcome">
+    <div class="card">
+      <div class="cake-mini">🧁</div>
+      <div class="tag">a little something for</div>
+      <h1>Kawthar</h1>
+      <div class="from">baked with love, by Saggaf</div>
+      <p class="blurb">Step into our tiny kitchen and bake a cake with me — one sweet step at a time. There's a little note hidden in every step. 💛</p>
+      <button class="btn" id="startBtn" style="margin-top:14px;">Open the kitchen →</button>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="game">
+    <div class="topbar">
+      <div>
+        <h2>Kawthar's Kitchen</h2>
+        <div class="sub">our recipe for love</div>
+      </div>
+      <div class="cake-mini" style="font-size:2rem">🎀</div>
+    </div>
+
+    <div class="steps" id="steps">
+      <div class="step-dot active"></div>
+      <div class="step-dot"></div>
+      <div class="step-dot"></div>
+      <div class="step-dot"></div>
+      <div class="step-dot"></div>
+    </div>
+
+    <div class="stage">
+      <!-- live cake (shared across steps) -->
+      <div class="cake-stage">
+        <div class="cake" id="cake">
+          <div class="candles" id="candles"></div>
+          <div class="name-ice">Kawthar</div>
+          <div class="frosting"><span class="drip d1"></span><span class="drip d2"></span><span class="drip d3"></span></div>
+          <div class="layer l2"></div>
+          <div class="layer l1"></div>
+        </div>
+        <div class="plate"></div>
+      </div>
+
+      <!-- STEP 1: ingredients -->
+      <div class="panel show" data-step="0">
+        <h3>1. Gather what we're made of</h3>
+        <p class="lead">Tap each ingredient to add it to the bowl.</p>
+        <div class="bowl" id="bowl">🥣</div>
+        <div class="ingredients" id="ingredients"></div>
+        <div class="actions">
+          <button class="btn" id="toMix" disabled>Mix it together →</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: mix -->
+      <div class="panel" data-step="1">
+        <h3>2. Mix it all together</h3>
+        <p class="lead">Tap the spoon to stir until it's smooth and sweet.</p>
+        <div class="mix-area">
+          <div class="spoon" id="spoon">🥄</div>
+          <div class="progress"><i id="mixFill"></i></div>
+          <button class="btn gold" id="stirBtn">Give it a stir</button>
+        </div>
+        <div class="actions">
+          <button class="btn" id="toBake" disabled>Into the oven →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: bake -->
+      <div class="panel" data-step="2">
+        <h3>3. Into the oven</h3>
+        <p class="lead">A little warmth, a little patience — and it rises.</p>
+        <div class="mix-area">
+          <div class="spoon" id="oven">🔥</div>
+          <div class="progress"><i id="bakeFill"></i></div>
+          <button class="btn gold" id="bakeBtn">Set the oven</button>
+        </div>
+        <div class="actions">
+          <button class="btn" id="toDecorate" disabled>Make it beautiful →</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: decorate -->
+      <div class="panel" data-step="3">
+        <h3>4. Make it beautiful</h3>
+        <p class="lead">Pick a frosting, add some sparkle — then tap the cake to scatter little hearts.</p>
+        <div class="swatches" id="swatches"></div>
+        <div class="deco-controls">
+          <button class="btn ghost" id="sprinkleBtn">Add sprinkles</button>
+          <button class="btn ghost" id="candleBtn">Add candles</button>
+        </div>
+        <div class="hint">psst — tap the cake to add hearts 💕</div>
+        <div class="actions">
+          <button class="btn" id="toFinale" disabled>It's ready →</button>
+        </div>
+      </div>
+
+      <!-- STEP 5: finale -->
+      <div class="panel" data-step="4">
+        <div class="finale">
+          <h3>5. A little wish</h3>
+          <p class="lead">Light the candles, close your eyes, and make a wish.</p>
+          <div class="actions">
+            <button class="btn gold" id="lightBtn">Light the candles 🕯️</button>
+            <button class="btn" id="wishBtn" disabled>Make a wish ✨</button>
+          </div>
+          <div id="finaleReveal" style="display:none;margin-top:18px;">
+            <div class="big">Happy baking, my love 💛</div>
+            <p class="letter">Kawthar — out of all the things I could make, the sweetest is a quiet kitchen and you in it. Thank you for being my every ordinary, beautiful day.</p>
+            <div class="sign">— always yours, Saggaf</div>
+            <div class="actions">
+              <button class="btn ghost" id="againBtn">Bake it again 🔁</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- love note slot -->
+      <div id="noteSlot"></div>
+    </div>
+  </section>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(s){return document.querySelector(s);};
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* sprinkle background */
+  (function(){
+    var colors=["#E2748E","#A6C898","#F4B73D","#C84E6C","#D08A45"];
+    var bg=$("#sprinkleBg"), html="";
+    for(var i=0;i<26;i++){
+      var c=colors[i%colors.length];
+      var t=Math.random()*100, l=Math.random()*100, r=Math.random()*180;
+      html+='<span style="top:'+t+'%;left:'+l+'%;background:'+c+';--r:'+r+'deg"></span>';
+    }
+    bg.innerHTML=html;
+  })();
+
+  /* toast */
+  var toastEl=$("#toast"), toastTimer;
+  function toast(msg){
+    toastEl.textContent=msg; toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){toastEl.classList.remove("show");},2200);
+  }
+
+  /* floating heart at coords */
+  function heartAt(x,y){
+    var hearts=["💛","💕","💗","🤍","🧡"];
+    var el=document.createElement("div");
+    el.className="heart-float";
+    el.textContent=hearts[Math.floor(Math.random()*hearts.length)];
+    el.style.left=x+"px"; el.style.top=y+"px";
+    document.body.appendChild(el);
+    setTimeout(function(){el.remove();},1700);
+  }
+  function heartBurst(){
+    for(var i=0;i<16;i++){
+      (function(d){setTimeout(function(){
+        heartAt(window.innerWidth/2 + (Math.random()*220-110),
+                window.innerHeight/2 + (Math.random()*120-60));
+      },d);})(i*70);
+    }
+  }
+
+  /* steps */
+  var stepIndex=0;
+  var dots=document.querySelectorAll(".step-dot");
+  var panels=document.querySelectorAll(".panel");
+  function goStep(n){
+    stepIndex=n;
+    panels.forEach(function(p){p.classList.toggle("show", +p.dataset.step===n);});
+    dots.forEach(function(d,i){
+      d.classList.toggle("active", i===n);
+      d.classList.toggle("done", i<n);
+    });
+    window.scrollTo({top:0,behavior:reduce?"auto":"smooth"});
+  }
+
+  /* love notes */
+  var notes=[
+    "Every good thing in my life starts with you — you're the first ingredient, always.",
+    "However messy life gets, mixing it with you turns it into something sweet.",
+    "You bring the warmth that makes our little home rise.",
+    "You make ordinary days beautiful, the way frosting makes a cake.",
+    "I'd choose this — a quiet kitchen and you — over anything in the world."
+  ];
+  function showNote(i){
+    var slot=$("#noteSlot");
+    slot.innerHTML='<div class="lovenote">“'+notes[i]+'”</div>';
+  }
+
+  /* start */
+  $("#startBtn").addEventListener("click",function(){
+    $("#welcome").style.display="none";
+    $("#game").style.display="block";
+    toast("Welcome to our kitchen 💛");
+  });
+
+  /* ---------- STEP 1: ingredients ---------- */
+  var cake=$("#cake");
+  var ingData=[
+    {e:"🌾",n:"Flour",m:"Flour — the steady base, like you holding everything together."},
+    {e:"🍯",n:"Sugar",m:"Sugar — sweet… but you're sweeter."},
+    {e:"🥚",n:"Eggs",m:"Eggs — for everything we're building together."},
+    {e:"🧈",n:"Butter",m:"Butter — you make the hard days softer."},
+    {e:"❤️",n:"A pinch of love",m:"A pinch of love — okay, a whole lot of it."}
+  ];
+  var added=0;
+  (function(){
+    var c=$("#ingredients"), html="";
+    ingData.forEach(function(d,i){
+      html+='<button class="ing" data-i="'+i+'"><span class="emj">'+d.e+'</span>'+d.n+'</button>';
+    });
+    c.innerHTML=html;
+    c.addEventListener("click",function(ev){
+      var b=ev.target.closest(".ing"); if(!b||b.classList.contains("used"))return;
+      b.classList.add("used"); added++;
+      var bowl=$("#bowl"); bowl.classList.remove("shake"); void bowl.offsetWidth; bowl.classList.add("shake");
+      toast(ingData[+b.dataset.i].m);
+      if(added>=ingData.length){
+        $("#toMix").disabled=false;
+        cake.classList.add("frosted"); // show a hint of batter base later; harmless
+        cake.classList.remove("frosted");
+        showNote(0);
+        toast("That's everything we're made of 💛");
+      }
+    });
+  })();
+  $("#toMix").addEventListener("click",function(){goStep(1);});
+
+  /* ---------- STEP 2: mix ---------- */
+  var mix=0, spoon=$("#spoon"), mixFill=$("#mixFill");
+  $("#stirBtn").addEventListener("click",function(){
+    mix=Math.min(100,mix+12);
+    mixFill.style.width=mix+"%";
+    spoon.style.transform="rotate("+(mix*6)+"deg) scale(1.08)";
+    setTimeout(function(){spoon.style.transform="rotate("+(mix*6)+"deg)";},120);
+    if(mix>=100){
+      $("#toBake").disabled=false;
+      showNote(1);
+      toast("Smooth and sweet ✨");
+    } else if(mix>=48 && mix<60){
+      toast("Mmm, it's coming together…");
+    }
+  });
+  $("#toBake").addEventListener("click",function(){goStep(2);});
+
+  /* ---------- STEP 3: bake ---------- */
+  var baking=false, bakeFill=$("#bakeFill");
+  $("#bakeBtn").addEventListener("click",function(){
+    if(baking)return; baking=true;
+    this.disabled=true; this.textContent="Baking…";
+    toast("Into the oven it goes 🔥");
+    var p=0, oven=$("#oven");
+    var iv=setInterval(function(){
+      p+=4; bakeFill.style.width=Math.min(100,p)+"%";
+      oven.style.transform="scale("+(1+Math.sin(p/8)*0.08)+")";
+      if(p>=100){
+        clearInterval(iv); oven.style.transform="scale(1)";
+        cake.classList.add("baked");
+        $("#toDecorate").disabled=false;
+        showNote(2);
+        toast("Ding! It's risen beautifully 🎂");
+      }
+    }, reduce?20:120);
+  });
+  $("#toDecorate").addEventListener("click",function(){goStep(3);});
+
+  /* ---------- STEP 4: decorate ---------- */
+  var frostings=[
+    {n:"Strawberry",c:"#E2748E"},
+    {n:"Chocolate",c:"#7A4326"},
+    {n:"Vanilla",c:"#F4E3C0"},
+    {n:"Pistachio",c:"#A6C898"}
+  ];
+  var frostingChosen=false;
+  (function(){
+    var sw=$("#swatches"), html="";
+    frostings.forEach(function(f,i){
+      html+='<button class="sw" data-c="'+f.c+'" data-n="'+f.n+'" title="'+f.n+'" style="background:'+f.c+'"></button>';
+    });
+    sw.innerHTML=html;
+    sw.addEventListener("click",function(ev){
+      var b=ev.target.closest(".sw"); if(!b)return;
+      document.querySelectorAll(".sw").forEach(function(x){x.classList.remove("sel");});
+      b.classList.add("sel");
+      var col=b.dataset.c;
+      cake.classList.add("frosted");
+      cake.querySelector(".frosting").style.background=col;
+      // also tint the candle stripes via name color stays white
+      frostingChosen=true;
+      $("#toFinale").disabled=false;
+      toast(b.dataset.n+" frosting — lovely choice 💕");
+    });
+  })();
+
+  $("#sprinkleBtn").addEventListener("click",function(){
+    var on=cake.classList.toggle("sprinkled");
+    this.textContent = on ? "Remove sprinkles" : "Add sprinkles";
+    toast(on?"Sprinkles on! 🌈":"All cleaned off");
+  });
+
+  var hasCandles=false;
+  $("#candleBtn").addEventListener("click",function(){
+    hasCandles=!hasCandles;
+    var c=$("#candles");
+    c.innerHTML = hasCandles ? '<div class="candle"><span class="flame"></span></div><div class="candle"><span class="flame"></span></div><div class="candle"><span class="flame"></span></div>' : "";
+    this.textContent = hasCandles ? "Remove candles" : "Add candles";
+    toast(hasCandles?"Candles ready 🕯️":"Candles away");
+  });
+
+  /* tap cake to add hearts */
+  cake.addEventListener("click",function(ev){
+    var rect=cake.getBoundingClientRect();
+    var x=ev.clientX-rect.left, y=ev.clientY-rect.top;
+    var h=document.createElement("div");
+    h.className="deco-heart";
+    h.textContent="💕";
+    h.style.left=(x-8)+"px"; h.style.top=(y-8)+"px";
+    cake.appendChild(h);
+    heartAt(ev.clientX,ev.clientY);
+  });
+
+  $("#toFinale").addEventListener("click",function(){
+    showNote(3);
+    goStep(4);
+  });
+
+  /* ---------- STEP 5: finale ---------- */
+  $("#lightBtn").addEventListener("click",function(){
+    if(!hasCandles){
+      // make sure there are candles to light
+      $("#candles").innerHTML='<div class="candle"><span class="flame"></span></div><div class="candle"><span class="flame"></span></div><div class="candle"><span class="flame"></span></div>';
+      hasCandles=true;
+    }
+    cake.classList.add("named");
+    $("#candles").querySelectorAll(".candle").forEach(function(c){c.classList.add("lit");});
+    this.disabled=true;
+    $("#wishBtn").disabled=false;
+    toast("Make a wish, my love ✨");
+  });
+
+  $("#wishBtn").addEventListener("click",function(){
+    $("#candles").querySelectorAll(".candle").forEach(function(c){c.classList.remove("lit");});
+    this.disabled=true;
+    showNote(4);
+    $("#finaleReveal").style.display="block";
+    heartBurst();
+    toast("Your wish is safe with me 💛");
+  });
+
+  $("#againBtn").addEventListener("click",function(){
+    location.reload();
+  });
+
+})();
+</script>
+</body>
+</html>
